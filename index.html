@@ -1,0 +1,1029 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Slovenia Family Trip – June 2026</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --teal: #1a7a6e;
+      --teal-light: #2ea89a;
+      --teal-pale: #e8f5f3;
+      --orange: #e07b35;
+      --bg: #f4f6f8;
+      --card: #ffffff;
+      --text: #2c3e50;
+      --muted: #6b7c93;
+      --border: #dde3ea;
+      --radius: 12px;
+    }
+
+    body { font-family: 'Segoe UI', Arial, sans-serif; background: var(--bg); color: var(--text); }
+
+    /* ─── PASSWORD SCREEN ─────────────────────────────────────────── */
+    #pw-screen {
+      position: fixed; inset: 0; background: linear-gradient(135deg, #0f4f46 0%, #1a7a6e 50%, #2ea89a 100%);
+      display: flex; align-items: center; justify-content: center; z-index: 9999;
+    }
+    #pw-box {
+      background: white; border-radius: 20px; padding: 48px 40px; max-width: 420px; width: 90%;
+      text-align: center; box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    }
+    #pw-box .flag { font-size: 3.5rem; margin-bottom: 12px; }
+    #pw-box h1 { font-size: 1.5rem; color: var(--teal); margin-bottom: 6px; }
+    #pw-box p { color: var(--muted); font-size: 0.9rem; margin-bottom: 28px; }
+    #pw-input {
+      width: 100%; padding: 14px 18px; border: 2px solid var(--border); border-radius: 10px;
+      font-size: 1rem; outline: none; transition: border 0.2s; margin-bottom: 14px;
+    }
+    #pw-input:focus { border-color: var(--teal); }
+    #pw-btn {
+      width: 100%; padding: 14px; background: var(--teal); color: white; border: none;
+      border-radius: 10px; font-size: 1rem; font-weight: 600; cursor: pointer; transition: background 0.2s;
+    }
+    #pw-btn:hover { background: #156058; }
+    #pw-error { color: #c0392b; font-size: 0.85rem; margin-top: 10px; display: none; }
+
+    /* ─── MAIN LAYOUT ─────────────────────────────────────────────── */
+    #app { display: none; }
+
+    #site-header {
+      background: linear-gradient(135deg, #1a7a6e 0%, #2ea89a 100%);
+      color: white; padding: 20px 24px 16px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+      position: sticky; top: 0; z-index: 100;
+    }
+    #site-header h1 { font-size: 1.45rem; font-weight: 700; }
+    #site-header .subtitle { font-size: 0.85rem; opacity: 0.85; margin-top: 3px; }
+
+    #nav {
+      background: white; border-bottom: 2px solid var(--border);
+      display: flex; overflow-x: auto; position: sticky; top: 70px; z-index: 99;
+    }
+    .nav-btn {
+      padding: 14px 22px; font-size: 0.88rem; font-weight: 600; border: none;
+      background: none; cursor: pointer; color: var(--muted); white-space: nowrap;
+      border-bottom: 3px solid transparent; transition: all 0.2s; margin-bottom: -2px;
+    }
+    .nav-btn:hover { color: var(--teal); }
+    .nav-btn.active { color: var(--teal); border-bottom-color: var(--teal); }
+
+    .section { display: none; padding: 28px 20px; max-width: 960px; margin: 0 auto; }
+    .section.active { display: block; }
+
+    /* ─── CARDS ───────────────────────────────────────────────────── */
+    .card {
+      background: var(--card); border-radius: var(--radius); padding: 22px 24px;
+      margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+      border: 1px solid var(--border);
+    }
+    .card h2 { font-size: 1.15rem; color: var(--teal); margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
+    .card h3 { font-size: 1rem; color: var(--text); margin: 14px 0 8px; font-weight: 600; }
+
+    /* ─── QUICK REF GRID ──────────────────────────────────────────── */
+    .qr-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px;
+    }
+    .qr-item {
+      background: var(--teal-pale); border-radius: 10px; padding: 14px 16px;
+      border-left: 4px solid var(--teal);
+    }
+    .qr-item .label { font-size: 0.72rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.06em; color: var(--teal); margin-bottom: 5px; }
+    .qr-item .value { font-size: 0.88rem; color: var(--text); line-height: 1.5; }
+
+    /* ─── DAY TABLE ───────────────────────────────────────────────── */
+    .day-table { width: 100%; border-collapse: collapse; font-size: 0.86rem; }
+    .day-table th { background: var(--teal); color: white; padding: 10px 12px; text-align: left;
+      font-weight: 600; font-size: 0.8rem; }
+    .day-table th:first-child { border-radius: 8px 0 0 0; }
+    .day-table th:last-child { border-radius: 0 8px 0 0; }
+    .day-table td { padding: 9px 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
+    .day-table tr:last-child td { border-bottom: none; }
+    .day-table tr:hover td { background: var(--teal-pale); }
+    .day-num { font-weight: 700; color: var(--teal); white-space: nowrap; }
+    .day-base { font-size: 0.8rem; background: var(--orange); color: white; padding: 2px 8px;
+      border-radius: 20px; white-space: nowrap; display: inline-block; }
+
+    /* ─── ITINERARY ───────────────────────────────────────────────── */
+    .day-card {
+      background: var(--card); border-radius: var(--radius); margin-bottom: 16px;
+      border: 1px solid var(--border); overflow: hidden;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    }
+    .day-header {
+      display: flex; align-items: center; gap: 14px; padding: 16px 20px;
+      background: white; cursor: pointer; user-select: none;
+    }
+    .day-header:hover { background: var(--teal-pale); }
+    .day-badge {
+      background: var(--teal); color: white; border-radius: 8px; padding: 5px 11px;
+      font-weight: 700; font-size: 0.82rem; white-space: nowrap; flex-shrink: 0;
+    }
+    .day-title { font-weight: 700; font-size: 1rem; flex: 1; }
+    .day-meta { font-size: 0.8rem; color: var(--muted); flex-shrink: 0; }
+    .day-toggle { color: var(--teal); font-size: 1.1rem; flex-shrink: 0; transition: transform 0.2s; }
+    .day-card.open .day-toggle { transform: rotate(180deg); }
+    .day-body { display: none; padding: 0 20px 20px; border-top: 1px solid var(--border); }
+    .day-card.open .day-body { display: block; }
+    .day-body p { font-size: 0.9rem; line-height: 1.65; margin-top: 12px; }
+    .day-body ul { margin: 10px 0 4px 20px; }
+    .day-body li { font-size: 0.88rem; line-height: 1.65; margin-bottom: 3px; }
+    .info-box {
+      background: var(--teal-pale); border-left: 4px solid var(--teal); border-radius: 0 8px 8px 0;
+      padding: 10px 14px; margin: 12px 0; font-size: 0.87rem; line-height: 1.6;
+    }
+    .warn-box {
+      background: #fff3cd; border-left: 4px solid #f0ad4e; border-radius: 0 8px 8px 0;
+      padding: 10px 14px; margin: 12px 0; font-size: 0.87rem; line-height: 1.6;
+    }
+    .stat-row { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0; }
+    .stat { background: #f0f4f8; border-radius: 8px; padding: 7px 13px; font-size: 0.82rem; }
+    .stat strong { display: block; font-size: 0.7rem; text-transform: uppercase;
+      letter-spacing: 0.05em; color: var(--muted); margin-bottom: 2px; }
+
+    /* ─── FLIGHT TABLE ────────────────────────────────────────────── */
+    .flight-table { width: 100%; border-collapse: collapse; font-size: 0.84rem; margin-top: 10px; }
+    .flight-table th { background: #f0f4f8; padding: 8px 10px; text-align: left;
+      font-size: 0.75rem; font-weight: 700; color: var(--muted); text-transform: uppercase;
+      letter-spacing: 0.04em; }
+    .flight-table td { padding: 9px 10px; border-bottom: 1px solid var(--border); }
+    .flight-table tr:last-child td { border-bottom: none; }
+    .flight-num { font-weight: 700; color: var(--teal); }
+
+    /* ─── LINKS ───────────────────────────────────────────────────── */
+    .link-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px; }
+    .link-card {
+      background: var(--teal-pale); border-radius: 10px; padding: 12px 16px;
+      text-decoration: none; color: var(--text); border: 1px solid #c3e0db;
+      transition: all 0.15s; display: block;
+    }
+    .link-card:hover { background: #d0ece8; border-color: var(--teal); transform: translateY(-1px); }
+    .link-card .lc-title { font-weight: 600; font-size: 0.88rem; color: var(--teal); }
+    .link-card .lc-url { font-size: 0.75rem; color: var(--muted); margin-top: 2px; }
+
+    /* ─── GEAR LIST ───────────────────────────────────────────────── */
+    .gear-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 8px; }
+    .gear-item { display: flex; align-items: flex-start; gap: 8px; font-size: 0.87rem;
+      padding: 6px 0; border-bottom: 1px solid #eef; }
+    .gear-item:before { content: '☐'; color: var(--teal); font-size: 1rem; flex-shrink: 0; margin-top: 1px; }
+
+    /* ─── MAP ─────────────────────────────────────────────────────── */
+    #map-section { padding: 0; max-width: 100%; }
+    #map-section.active { display: block; }
+    #map-header {
+      padding: 16px 20px; background: white; border-bottom: 1px solid var(--border);
+    }
+    #map-header h2 { color: var(--teal); font-size: 1.1rem; }
+    #legend-bar {
+      background: white; border-bottom: 1px solid #dde; padding: 8px 16px;
+      display: flex; flex-wrap: wrap; gap: 16px; align-items: center; font-size: 0.8rem; color: #444;
+    }
+    .leg-item { display: flex; align-items: center; gap: 6px; }
+    .leg-dot { width: 14px; height: 14px; border-radius: 50%; border: 2px solid rgba(0,0,0,0.2); flex-shrink: 0; }
+    .leg-line { width: 24px; height: 4px; border-radius: 2px; flex-shrink: 0; }
+    #filter-bar {
+      background: #eef2f5; border-bottom: 1px solid #dde; padding: 7px 16px;
+      display: flex; flex-wrap: wrap; gap: 8px; align-items: center; font-size: 0.78rem;
+    }
+    .filter-btn {
+      padding: 4px 12px; border-radius: 20px; border: 1.5px solid #aaa;
+      background: white; cursor: pointer; font-size: 0.78rem; transition: all 0.15s; color: #333;
+    }
+    .filter-btn.active { background: #1a7a6e; border-color: #1a7a6e; color: white; }
+    .filter-btn:hover:not(.active) { background: #d6f0ed; border-color: #1a7a6e; }
+    #map { height: 560px; width: 100%; }
+    .leaflet-popup-content-wrapper { border-radius: 10px; box-shadow: 0 4px 20px rgba(0,0,0,0.18); border: none; }
+    .popup-title { font-size: 1rem; font-weight: 700; color: #1a7a6e; margin-bottom: 4px; }
+    .popup-date { font-size: 0.75rem; color: #888; margin-bottom: 6px; font-style: italic; }
+    .popup-body { font-size: 0.82rem; color: #333; line-height: 1.5; }
+    .popup-body a { color: #1a7a6e; }
+    .popup-tag { display: inline-block; padding: 2px 8px; border-radius: 10px;
+      font-size: 0.7rem; font-weight: 600; margin-top: 6px; margin-right: 4px; }
+    .tag-base    { background: #fff3cd; color: #856404; }
+    .tag-hike    { background: #d4edda; color: #155724; }
+    .tag-daytrip { background: #cce5ff; color: #004085; }
+    .tag-ferry   { background: #f8d7da; color: #721c24; }
+    .tag-travel  { background: #e2e3e5; color: #383d41; }
+
+    /* ─── RESPONSIVE ──────────────────────────────────────────────── */
+    @media (max-width: 600px) {
+      .section { padding: 16px 12px; }
+      .card { padding: 16px; }
+      .qr-grid { grid-template-columns: 1fr; }
+      #pw-box { padding: 36px 24px; }
+      .day-table { font-size: 0.8rem; }
+      .day-table td, .day-table th { padding: 7px 8px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ─── PASSWORD SCREEN ─────────────────────────────────────────────────── -->
+<div id="pw-screen">
+  <div id="pw-box">
+    <div class="flag">🏔️</div>
+    <h1>Slovenia Family Trip</h1>
+    <p>June 2026 &mdash; Ben, Seamus &amp; Solveig</p>
+    <input type="password" id="pw-input" placeholder="Enter password" autocomplete="current-password" />
+    <button id="pw-btn">Let's Go!</button>
+    <div id="pw-error">Wrong password. Try again!</div>
+  </div>
+</div>
+
+<!-- ─── MAIN APP ────────────────────────────────────────────────────────── -->
+<div id="app">
+
+  <div id="site-header">
+    <h1>🏔️ Slovenia Family Trip – June 2026</h1>
+    <div class="subtitle">12 days &bull; Julian Alps &amp; Soča Valley &bull; Ben, Seamus &amp; Solveig</div>
+  </div>
+
+  <div id="nav">
+    <button class="nav-btn active" data-tab="overview">📋 Overview</button>
+    <button class="nav-btn" data-tab="itinerary">📅 Day by Day</button>
+    <button class="nav-btn" data-tab="map">🗺️ Map</button>
+    <button class="nav-btn" data-tab="practical">✈️ Practical Info</button>
+    <button class="nav-btn" data-tab="gear">🎒 Gear &amp; Tips</button>
+  </div>
+
+  <!-- ══════════════ OVERVIEW ══════════════ -->
+  <div class="section active" id="tab-overview">
+
+    <div class="card">
+      <h2>⚡ Quick Reference</h2>
+      <div class="qr-grid">
+        <div class="qr-item">
+          <div class="label">Flights (Outbound)</div>
+          <div class="value">Spokane → SEA → AMS → Ljubljana<br>Arrive LJU <strong>13:25, Jun 8</strong></div>
+        </div>
+        <div class="qr-item">
+          <div class="label">Flights (Return)</div>
+          <div class="value">LJU departs <strong>06:00, Jun 19</strong><br>⚠️ Pre-book taxi for <strong>03:30 AM</strong></div>
+        </div>
+        <div class="qr-item">
+          <div class="label">Venice Ferry</div>
+          <div class="value">Adriatic Lines · Jun 13<br>Order: <strong>5EHNR2FGIJY</strong> ✔<br>Departs 08:00 · Returns 20:00</div>
+        </div>
+        <div class="qr-item">
+          <div class="label">Transport</div>
+          <div class="value">Trains + buses throughout<br>No rental car needed</div>
+        </div>
+        <div class="qr-item">
+          <div class="label">Bases (Airbnb)</div>
+          <div class="value">Ljubljana (1 night) · Bohinj/Ukanc (3) · Piran (2) · Bovec (2) · Kobarid (1) · Ljubljana (2)</div>
+        </div>
+        <div class="qr-item">
+          <div class="label">Taxi (Early Departure)</div>
+          <div class="value">Metro Taxi: <strong>+386 1 519 25 19</strong><br>Laguna Taxi also available<br>Book at least 1 week ahead</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>📅 Trip at a Glance</h2>
+      <div style="overflow-x:auto">
+        <table class="day-table">
+          <thead>
+            <tr>
+              <th>Day</th>
+              <th>Date</th>
+              <th>Base</th>
+              <th>Highlights</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td class="day-num">1</td><td>Mon Jun 8</td><td><span class="day-base">Ljubljana</span></td><td>Arrive 13:25. Castle walk, old town.</td></tr>
+            <tr><td class="day-num">2</td><td>Tue Jun 9</td><td><span class="day-base">Bohinj</span></td><td>Train to Bohinj. Afternoon: Savica Waterfall warm-up hike.</td></tr>
+            <tr><td class="day-num">3</td><td>Wed Jun 10</td><td><span class="day-base">Bohinj</span></td><td>🥾 HIKE: Seven Lakes Valley (20 km, 1,500 m gain)</td></tr>
+            <tr><td class="day-num">4</td><td>Thu Jun 11</td><td><span class="day-base">Bohinj</span></td><td>🇦🇹 AUSTRIA DAY: Villach + Dobratsch Nature Park</td></tr>
+            <tr><td class="day-num">5</td><td>Fri Jun 12</td><td><span class="day-base">Piran</span></td><td>Travel Bohinj → Piran. Stop: Škocjan Caves (UNESCO).</td></tr>
+            <tr><td class="day-num">6</td><td>Sat Jun 13</td><td><span class="day-base">Piran</span></td><td>🚢 VENICE DAY ✔ Ferry booked! Departs 08:00.</td></tr>
+            <tr><td class="day-num">7</td><td>Sun Jun 14</td><td><span class="day-base">Bovec</span></td><td>Travel Piran → Bovec. Soča Great Canyon walk.</td></tr>
+            <tr><td class="day-num">8</td><td>Mon Jun 15</td><td><span class="day-base">Bovec</span></td><td>🥾 HIKE: Soča Trail — source to Bovec (20 km, emerald river)</td></tr>
+            <tr><td class="day-num">9</td><td>Tue Jun 16</td><td><span class="day-base">Kobarid</span></td><td>Move to Kobarid. 🥾 HIKE: Lake Krn + Mt Krn (2,244 m)</td></tr>
+            <tr><td class="day-num">10</td><td>Wed Jun 17</td><td><span class="day-base">Ljubljana</span></td><td>Kobarid loop (morning). Scenic Bohinj Railway → Ljubljana.</td></tr>
+            <tr><td class="day-num">11</td><td>Thu Jun 18</td><td><span class="day-base">Ljubljana</span></td><td>🇭🇷 DAY TRIP: Zagreb, Croatia. Farewell dinner.</td></tr>
+            <tr><td class="day-num">12</td><td>Fri Jun 19</td><td>✈️ Depart</td><td>⚠️ EARLY FLIGHT: DL 9567 departs 06:00. Taxi at 03:30.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>🏔️ The Big Hikes</h2>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px">
+        <div style="background:#f0faf5;border-radius:10px;padding:16px;border:1px solid #c3e0d0">
+          <div style="font-weight:700;color:#155724;margin-bottom:6px">Seven Lakes Valley — Day 3</div>
+          <div style="font-size:0.84rem;color:var(--text);line-height:1.6">20 km · 1,500 m gain · 8–10 hrs<br><strong>Difficulty: Strenuous</strong><br>Slovenia's greatest day hike. Seven glacial lakes in a dramatic high-alpine cirque. Start by 07:00.</div>
+        </div>
+        <div style="background:#f0faf5;border-radius:10px;padding:16px;border:1px solid #c3e0d0">
+          <div style="font-weight:700;color:#155724;margin-bottom:6px">Soča Trail — Day 8</div>
+          <div style="font-size:0.84rem;color:var(--text);line-height:1.6">~20 km · 400 m gain · 5–7 hrs<br><strong>Difficulty: Moderate</strong><br>Impossibly teal-green river from its source. Boka Waterfall, Kozjak Waterfall, Napoleon Bridge.</div>
+        </div>
+        <div style="background:#f0faf5;border-radius:10px;padding:16px;border:1px solid #c3e0d0">
+          <div style="font-weight:700;color:#155724;margin-bottom:6px">Mount Krn — Day 9</div>
+          <div style="font-size:0.84rem;color:var(--text);line-height:1.6">16 km · 1,610 m gain · 9–10 hrs<br><strong>Difficulty: Very Strenuous</strong><br>One of the Julian Alps' finest summits. WWI fortifications at the top. Can stop at Lake Krn.</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ══════════════ ITINERARY ══════════════ -->
+  <div class="section" id="tab-itinerary">
+
+    <!-- Day 1 -->
+    <div class="day-card open">
+      <div class="day-header" onclick="toggleDay(this)">
+        <div class="day-badge">Day 1</div>
+        <div class="day-title">Arrive Ljubljana</div>
+        <div class="day-meta">Mon Jun 8 · Ljubljana</div>
+        <div class="day-toggle">▼</div>
+      </div>
+      <div class="day-body">
+        <div class="info-box">Flight: <strong>DL 9220</strong> (KLM City Hopper) Amsterdam → Ljubljana · Departs 11:40 · <strong>Arrives 13:25</strong></div>
+        <p>Arrive Ljubljana Airport (LJU) at 13:25. GoOpti shuttle or Arriva bus to city centre (30–45 min). Taxis ~€30–35.</p>
+        <p>Check into your Airbnb in the city centre.</p>
+        <h3>Evening Walk</h3>
+        <ul>
+          <li><a href="https://www.visitljubljana.com/en/visitors/attractions/preseren-square/" target="_blank">Prešeren Square</a> — the heart of Ljubljana</li>
+          <li><a href="https://www.visitljubljana.com/en/visitors/attractions/triple-bridge/" target="_blank">Triple Bridge</a> and <a href="https://www.visitljubljana.com/en/visitors/attractions/dragon-bridge/" target="_blank">Dragon Bridge</a> — all within 10 minutes on foot</li>
+          <li><a href="https://www.ljubljanskigrad.si/en/" target="_blank">Ljubljana Castle</a> — 15-min walk up from the old town. Free to walk the ramparts. Great views.</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Day 2 -->
+    <div class="day-card">
+      <div class="day-header" onclick="toggleDay(this)">
+        <div class="day-badge">Day 2</div>
+        <div class="day-title">Travel to Bohinj + Savica Waterfall</div>
+        <div class="day-meta">Tue Jun 9 · Bohinj</div>
+        <div class="day-toggle">▼</div>
+      </div>
+      <div class="day-body">
+        <div class="info-box">Morning: train Ljubljana → Jesenice → Bohinjska Bistrica (~2 hrs). Catch the 08:30 or 09:00 departure. Bus or taxi from Bohinjska Bistrica to Ukanc (~20 min). Check in.</div>
+        <h3>Afternoon Hike: <a href="https://www.bohinj.si/en/things-to-do/nature/slap-savica/" target="_blank">Slap Savica (Savica Waterfall)</a></h3>
+        <div class="stat-row">
+          <div class="stat"><strong>Distance</strong>2–3 hrs return</div>
+          <div class="stat"><strong>Elevation Gain</strong>280 m</div>
+          <div class="stat"><strong>Difficulty</strong>Easy–Moderate</div>
+        </div>
+        <p>Well-marked trail to a stunning 78-metre twin-jet waterfall. Same trailhead as Seven Lakes tomorrow.</p>
+        <p><strong>Swim option:</strong> Lake Bohinj reaches 20–23 °C in June. Ribčev Laz beach is pleasant.</p>
+      </div>
+    </div>
+
+    <!-- Day 3 -->
+    <div class="day-card">
+      <div class="day-header" onclick="toggleDay(this)">
+        <div class="day-badge">Day 3</div>
+        <div class="day-title">🥾 Seven Lakes Valley — Slovenia's Greatest Day Hike</div>
+        <div class="day-meta">Wed Jun 10 · Bohinj</div>
+        <div class="day-toggle">▼</div>
+      </div>
+      <div class="day-body">
+        <p>The <a href="https://www.bohinj.si/en/things-to-do/hiking/seven-triglav-lakes-valley/" target="_blank">Seven Lakes Valley</a> (<em>Dolina Triglavskih Jezer</em>) is the signature day hike of the Julian Alps — seven glacial lakes in a dramatic high-alpine cirque.</p>
+        <div class="stat-row">
+          <div class="stat"><strong>Distance</strong>~20 km</div>
+          <div class="stat"><strong>Elevation Gain</strong>1,500 m</div>
+          <div class="stat"><strong>Time</strong>8–10 hrs</div>
+          <div class="stat"><strong>Difficulty</strong>Strenuous</div>
+          <div class="stat"><strong>Start</strong>Ukanc / Savica</div>
+        </div>
+        <div class="warn-box">⏰ Start early — leave by <strong>07:00</strong> to avoid afternoon thunderstorms common above treeline in June.</div>
+        <h3>Route</h3>
+        <ul>
+          <li>Savica Falls → steep forest trail → first lake (<em>Črno jezero</em>)</li>
+          <li>Traverse all 7 lakes</li>
+          <li>Optional extension to Hribarice plateau (2,358 m)</li>
+        </ul>
+        <div class="info-box">🍽️ Mountain hut: <a href="https://www.pzs.si/koce.php?pid=35" target="_blank"><em>Koča pri Triglavskih jezerih</em></a> at the lakes serves hot meals. Worth a lunch stop.<br><br>No technical climbing. Trail blazed with red-and-white markers throughout. Trekking poles recommended.</div>
+        <p><strong>Pack:</strong> 2+ litres of water per person, lunch, layers, rain gear.</p>
+      </div>
+    </div>
+
+    <!-- Day 4 -->
+    <div class="day-card">
+      <div class="day-header" onclick="toggleDay(this)">
+        <div class="day-badge">Day 4</div>
+        <div class="day-title">🇦🇹 Austria Day — Villach &amp; Dobratsch</div>
+        <div class="day-meta">Thu Jun 11 · (Bohinj base)</div>
+        <div class="day-toggle">▼</div>
+      </div>
+      <div class="day-body">
+        <p>A rest day from hard hiking, but still active — and genuinely in Austria. The Karawanken range separates Slovenia from Carinthia; the tunnel train crossing is an experience in itself.</p>
+        <div class="info-box">Bus: Bohinjska Bistrica → Jesenice (~35 min) · Train: Jesenice → Villach (~40 min) through the <strong>Karawanken Tunnel</strong>. Total one-way: ~1 hr 15 min. No border checks (Schengen).</div>
+        <h3>Option A — <a href="https://www.visitvillach.at/en/naturpark-dobratsch.html" target="_blank">Dobratsch Nature Park</a> Summit Hike</h3>
+        <p>Taxi or seasonal bus from Villach to the Aichingerhut starting point (~1,650 m), then hike to the Dobratsch summit (2,166 m, ~1.5 hrs, 516 m gain). Panoramic views into Slovenia, Italy, and Austria. Historic chapel at the top from 1692. <a href="https://www.villacher-alpenstrasse.at/en/nature-experience/hiking" target="_blank">Hiking info →</a></p>
+        <h3>Option B — <a href="https://www.visitvillach.at/en/" target="_blank">Villach Town</a> + Light Walk</h3>
+        <p>Villach old town (Hauptplatz, Stadtpfarrkirche tower for views), lunch at a Carinthian restaurant (try <em>Kasnudeln</em> — cheese-filled pasta), then an easy lakeside walk at <a href="https://www.faakersee.at/" target="_blank">Faaker See</a> (20 min by bus).</p>
+        <p>Return: train Villach → Jesenice (~40 min), then bus back to Bohinj. Arrive by 19:00–20:00.</p>
+      </div>
+    </div>
+
+    <!-- Day 5 -->
+    <div class="day-card">
+      <div class="day-header" onclick="toggleDay(this)">
+        <div class="day-badge">Day 5</div>
+        <div class="day-title">Travel Bohinj → Škocjan Caves → Piran</div>
+        <div class="day-meta">Fri Jun 12 · Piran</div>
+        <div class="day-toggle">▼</div>
+      </div>
+      <div class="day-body">
+        <div class="info-box">Morning: train Bohinjska Bistrica → Ljubljana (~2 hrs). Aim to arrive Ljubljana by 10:00–11:00.</div>
+        <h3>🏛️ Škocjan Caves — UNESCO World Heritage Site</h3>
+        <p>Train Ljubljana → Divača (50 min), then taxi/shuttle to caves (~4 km). 2-hr guided tour through a cathedral-sized underground canyon — one of the largest in the world.</p>
+        <p><strong>~€22 adult / €14 child.</strong> Book tickets in advance at <a href="https://www.park-skocjanske-jame.si/en/" target="_blank">park-skocjanske-jame.si</a></p>
+        <div class="info-box">After tour: bus or taxi Divača → Piran (~45 min). Arrive early evening.<br><br>Explore Piran: Tartinijev Trg, <a href="https://www.visitljubljana.com/en/visitors/attractions/st-george-s-parish-church-in-piran/" target="_blank">St George's Church tower</a>, the sea walls at sunset.</div>
+        <div class="warn-box">🚢 Ferry is booked (Order 5EHNR2FGIJY). Departs <strong>08:00</strong> — be at the pier by <strong>07:45</strong>. The pier is 5 minutes walk from most Piran Airbnbs.</div>
+      </div>
+    </div>
+
+    <!-- Day 6 -->
+    <div class="day-card">
+      <div class="day-header" onclick="toggleDay(this)">
+        <div class="day-badge">Day 6</div>
+        <div class="day-title">🇮🇹 Venice Day Trip</div>
+        <div class="day-meta">Sat Jun 13 · (Piran base)</div>
+        <div class="day-toggle">▼</div>
+      </div>
+      <div class="day-body">
+        <div class="info-box">✔ <strong>BOOKED:</strong> Adriatic Lines · Order 5EHNR2FGIJY<br>Depart Piran harbour: <strong>08:00</strong> · Journey ~3.5 hrs · Arrive Venice ~11:30<br>Return: depart Venice ~16:30 · Arrive back in Piran: <strong>20:00</strong></div>
+        <div class="warn-box">💶 Venice charges a day-tripper access fee on Jun 13 (~€5/person). Book at <a href="https://cda.venezia.it" target="_blank">cda.venezia.it</a>.</div>
+        <p>Arrive at San Basilio port in <a href="https://www.visitvenezia.eu/en/venice-districts/dorsoduro" target="_blank">Dorsoduro</a> — quiet and beautiful, far from cruise-ship crowds.</p>
+        <h3>Suggested Route</h3>
+        <ul>
+          <li>Dorsoduro (Zattere promenade, <a href="https://www.gallerieaccademia.it/en" target="_blank">Gallerie dell'Accademia</a>)</li>
+          <li><a href="https://en.wikipedia.org/wiki/Rialto_Bridge" target="_blank">Rialto Bridge</a> → Cannaregio → <a href="https://www.basilicasanmarco.it/" target="_blank">Piazza San Marco</a> → Castello</li>
+        </ul>
+        <div class="info-box">🍽️ Eat well: skip the Piazza San Marco cafes. Try bacari (Venetian wine bars) in Dorsoduro or Cannaregio for cicchetti (small plates, ~€1.50–2 each).</div>
+        <p>Board at San Basilio no later than <strong>16:15</strong> for the return.</p>
+      </div>
+    </div>
+
+    <!-- Day 7 -->
+    <div class="day-card">
+      <div class="day-header" onclick="toggleDay(this)">
+        <div class="day-badge">Day 7</div>
+        <div class="day-title">Travel to Soča Valley + Canyon Walk</div>
+        <div class="day-meta">Sun Jun 14 · Bovec</div>
+        <div class="day-toggle">▼</div>
+      </div>
+      <div class="day-body">
+        <div class="info-box">Bus: Piran → Koper → Nova Gorica → Bovec. Total: ~3.5–4 hrs.</div>
+        <h3>Afternoon: <a href="https://www.soca-valley.com/en/dozivetja/na-soci/tolminska-korita/" target="_blank">Velika Korita (Great Canyon of the Soča)</a></h3>
+        <div class="stat-row">
+          <div class="stat"><strong>Time</strong>1.5–2 hr loop</div>
+          <div class="stat"><strong>Difficulty</strong>Easy</div>
+        </div>
+        <p>Emerald gorges and suspension bridges. Starts from Bovec centre.</p>
+        <p><strong>Bovec adventure sports:</strong> <a href="https://www.soca-valley.com/en/dozivetja/adrenalinska-dozivetja/" target="_blank">paragliding, kayaking, canyoning</a> all available if you want an add-on.</p>
+      </div>
+    </div>
+
+    <!-- Day 8 -->
+    <div class="day-card">
+      <div class="day-header" onclick="toggleDay(this)">
+        <div class="day-badge">Day 8</div>
+        <div class="day-title">🥾 Soča Trail — Source to Bovec</div>
+        <div class="day-meta">Mon Jun 15 · Bovec</div>
+        <div class="day-toggle">▼</div>
+      </div>
+      <div class="day-body">
+        <p>The Soča River is one of Europe's most beautiful rivers — an impossible teal-green fed by glacial melt. The <a href="https://www.soca-valley.com/en/dozivetja/kolesarjenje/soska-pot/" target="_blank">Soča Trail (<em>Soška pot</em>)</a> follows it from source to sea; the upper section is the highlight.</p>
+        <div class="stat-row">
+          <div class="stat"><strong>Distance</strong>~20 km one-way</div>
+          <div class="stat"><strong>Elevation Gain</strong>~400 m</div>
+          <div class="stat"><strong>Time</strong>5–7 hrs</div>
+          <div class="stat"><strong>Difficulty</strong>Moderate</div>
+          <div class="stat"><strong>Start</strong>Izvir Soče (source)</div>
+        </div>
+        <div class="info-box">Taxi or morning bus to the Soča source (<em>Izvir Soče</em>, ~40 km from Bovec), then hike downstream.</div>
+        <h3>Highlights Along the Trail</h3>
+        <ul>
+          <li><a href="https://www.soca-valley.com/en/dozivetja/na-soci/slap-boka/" target="_blank"><strong>Boka Waterfall</strong></a> — Slovenia's highest at 144 m (20-min detour)</li>
+          <li><a href="https://www.soca-valley.com/en/dozivetja/na-soci/slap-kozjak/" target="_blank"><strong>Kozjak Waterfall</strong></a> — hidden in a grotto (15-min side trail)</li>
+          <li>Napoleon Bridge</li>
+          <li>Mlinarica Gorge</li>
+        </ul>
+        <p>Mostly flat — a great active-recovery day after Seven Lakes. <strong>Shorter option:</strong> start from Trenta (~12 km).</p>
+      </div>
+    </div>
+
+    <!-- Day 9 -->
+    <div class="day-card">
+      <div class="day-header" onclick="toggleDay(this)">
+        <div class="day-badge">Day 9</div>
+        <div class="day-title">🥾 Mount Krn &amp; Lake Krn (2,244 m)</div>
+        <div class="day-meta">Tue Jun 16 · Kobarid</div>
+        <div class="day-toggle">▼</div>
+      </div>
+      <div class="day-body">
+        <p>Move to Kobarid by bus (30 min), then tackle Mount Krn — one of the Julian Alps' finest summits, with the approach passing the largest glacial lake in Slovenia.</p>
+        <div class="stat-row">
+          <div class="stat"><strong>Distance</strong>~16 km return</div>
+          <div class="stat"><strong>Elevation Gain</strong>1,610 m</div>
+          <div class="stat"><strong>Time</strong>9–10 hrs</div>
+          <div class="stat"><strong>Difficulty</strong>Very Strenuous</div>
+          <div class="stat"><strong>Start</strong>Lepena valley</div>
+        </div>
+        <div class="info-box">Taxi from Kobarid to Lepena valley trailhead (~15 min, ~€15–20 each way). Ask your Airbnb host for a local driver.</div>
+        <h3>Route</h3>
+        <ul>
+          <li>Lepena → forest trail → <a href="https://www.soca-valley.com/en/dozivetja/pohodnistvo/krnsko-jezero/" target="_blank">Lake Krn (<em>Krnsko jezero</em>)</a> at 1,394 m (3 hrs, 750 m gain)</li>
+          <li>→ <a href="https://www.soca-valley.com/en/dozivetja/pohodnistvo/gora-krn/" target="_blank">Krn summit (2,244 m)</a>, 3 more hrs, 860 m more</li>
+          <li>Mountain hut at the lake for lunch</li>
+        </ul>
+        <p><strong>Shorter option:</strong> Lake Krn only (6–7 hrs, 750 m gain) if energy is flagging.</p>
+        <div class="info-box">⚔️ <strong>WWI context:</strong> The Isonzo Front (1915–1917) ran through here. Fortifications and cave shelters survive on the summit. The <a href="https://www.kobariski-muzej.si/en/" target="_blank">Kobarid Museum</a> in town covers this brilliantly — well worth an hour the evening before.</div>
+      </div>
+    </div>
+
+    <!-- Day 10 -->
+    <div class="day-card">
+      <div class="day-header" onclick="toggleDay(this)">
+        <div class="day-badge">Day 10</div>
+        <div class="day-title">Kobarid Historical Loop + Bohinj Railway to Ljubljana</div>
+        <div class="day-meta">Wed Jun 17 · Ljubljana</div>
+        <div class="day-toggle">▼</div>
+      </div>
+      <div class="day-body">
+        <h3>Morning: <a href="https://www.kobariski-muzej.si/en/historic-walk/" target="_blank">Kobarid Historical Walk (<em>Zgodovinska pot</em>)</a></h3>
+        <div class="stat-row">
+          <div class="stat"><strong>Distance</strong>5 km loop</div>
+          <div class="stat"><strong>Elevation Gain</strong>200 m</div>
+          <div class="stat"><strong>Time</strong>~2 hrs</div>
+          <div class="stat"><strong>Difficulty</strong>Easy–Moderate</div>
+        </div>
+        <p>From town to the Soča gorge, past waterfalls, Italian fortifications, Napoleon Bridge, and WWI trenches. Suitable for all fitness levels. Pairs well with the Kobarid Museum (1 hr, fascinating for teens).</p>
+        <div class="info-box">🚂 <strong>Midday:</strong> Board the scenic <a href="https://www.bohinj.si/en/things-to-do/excursions/bohinj-railway/" target="_blank"><strong>Bohinj Railway</strong></a> from Most na Soči → Bohinjska Bistrica (through a 6-km tunnel beneath the Julian Alps) → Jesenice → Ljubljana. One of Slovenia's great railway journeys.</div>
+        <p>Arrive Ljubljana: late afternoon. Easy evening in the city.</p>
+      </div>
+    </div>
+
+    <!-- Day 11 -->
+    <div class="day-card">
+      <div class="day-header" onclick="toggleDay(this)">
+        <div class="day-badge">Day 11</div>
+        <div class="day-title">🇭🇷 Day Trip: Zagreb, Croatia</div>
+        <div class="day-meta">Thu Jun 18 · Ljubljana</div>
+        <div class="day-toggle">▼</div>
+      </div>
+      <div class="day-body">
+        <p>Zagreb is one of Central Europe's most underrated capitals — compact, medieval upper town, excellent open-air market, great coffee culture. Croatia is in the Schengen Area and uses the euro, so no border hassles.</p>
+        <div class="info-box">Train Ljubljana → Zagreb: ~2.5 hrs direct. Take the <strong>07:00–08:00 departure</strong>.<br>Return: <strong>17:00 or 18:00 train</strong> from Zagreb, arriving Ljubljana by 20:00–20:30.</div>
+        <h3>Suggested Day in Zagreb</h3>
+        <ul>
+          <li><a href="https://www.dolac.hr/" target="_blank"><strong>Dolac Market</strong></a> — Rooftop open-air farmers market. Fresh produce, local honey. Closes early afternoon — go first.</li>
+          <li><a href="https://www.infozagreb.hr/en/explore/neighbourhoods/gradec" target="_blank"><strong>Gornji Grad (Upper Town)</strong></a> — Take the <a href="https://www.zet.hr/en/services/funicular/66" target="_blank">Uspinjača funicular</a> (world's shortest, 66 m, €0.66). Visit Kamenita Vrata and <a href="https://www.info.hazu.hr/en/strossmayerov-trg/crkva-sv-marka/" target="_blank">St Mark's Church</a> with its famous tiled roof.</li>
+          <li><a href="https://brokenships.com/" target="_blank"><strong>Museum of Broken Relationships</strong></a> — Objects donated by people worldwide, each with the story of a relationship that ended. Genuinely moving and very popular with teenagers.</li>
+          <li><a href="https://www.infozagreb.hr/en/explore/parks-and-squares/zrinjevac" target="_blank"><strong>Zrinjevac Park &amp; Lower Town</strong></a> — Art Nouveau arcades. Good for a coffee break.</li>
+          <li><strong>Lunch:</strong> Tkalčičeva Street area. Try <em>štrukli</em> (baked cheese pastry) or a Zagreb schnitzel.</li>
+        </ul>
+        <div class="warn-box">⚠️ Head to the station by 17:00–18:00. <strong>06:00 flight tomorrow</strong> means a 03:30 taxi. Be home from Zagreb by 20:30, have a farewell dinner, pack, and sleep.</div>
+      </div>
+    </div>
+
+    <!-- Day 12 -->
+    <div class="day-card">
+      <div class="day-header" onclick="toggleDay(this)">
+        <div class="day-badge">Day 12</div>
+        <div class="day-title">✈️ Departure — Early Flight</div>
+        <div class="day-meta">Fri Jun 19 · Depart</div>
+        <div class="day-toggle">▼</div>
+      </div>
+      <div class="day-body">
+        <div class="warn-box">⚠️ <strong>Be at Ljubljana Airport by 04:00. Pre-book a private taxi for 03:30.</strong><br>Confirm the booking the day before. GoOpti does NOT reliably serve 03:30 AM pickups.<br>Metro Taxi: <strong>+386 1 519 25 19</strong> · Laguna Taxi. Book at least 1 week in advance.</div>
+        <table class="flight-table">
+          <thead><tr><th>Flight</th><th>Carrier</th><th>Route</th><th>Departs</th><th>Arrives</th></tr></thead>
+          <tbody>
+            <tr><td class="flight-num">DL 9567</td><td>KLM City Hopper</td><td>Ljubljana → Amsterdam</td><td>06:00</td><td>08:00</td></tr>
+            <tr><td class="flight-num">DL 143</td><td>Delta</td><td>Amsterdam → Seattle</td><td>10:20</td><td>11:37</td></tr>
+            <tr><td class="flight-num">DL 4145</td><td>SkyWest/Delta</td><td>Seattle → Spokane</td><td>14:30</td><td>15:42</td></tr>
+          </tbody>
+        </table>
+        <div class="info-box">The Amsterdam layover (08:00–10:20) is 2 hrs 20 min — workable. Head straight to the gate.<br><br><strong>Srečno!</strong> (Good luck!) 🏔️</div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ══════════════ MAP ══════════════ -->
+  <div class="section" id="tab-map" id="map-section">
+    <div id="map-header">
+      <h2>🗺️ Interactive Trip Map</h2>
+      <p style="font-size:0.85rem;color:var(--muted);margin-top:4px">Click any marker for details. Use filters to show/hide layers.</p>
+    </div>
+    <div id="legend-bar">
+      <strong style="margin-right:4px">Legend:</strong>
+      <span class="leg-item"><span class="leg-dot" style="background:#e07b35"></span>Base camp</span>
+      <span class="leg-item"><span class="leg-dot" style="background:#2a9d60"></span>Day hike</span>
+      <span class="leg-item"><span class="leg-dot" style="background:#3a7bd5"></span>Day trip</span>
+      <span class="leg-item"><span class="leg-dot" style="background:#c0392b"></span>Ferry / boat</span>
+      <span class="leg-item"><span class="leg-dot" style="background:#9b59b6"></span>Airport</span>
+      <span class="leg-item"><span class="leg-line" style="background:#e07b35"></span>Train / bus route</span>
+    </div>
+    <div id="filter-bar">
+      <span style="color:#666;margin-right:2px">Show:</span>
+      <button class="filter-btn active" data-filter="all">All</button>
+      <button class="filter-btn" data-filter="base">🏠 Bases</button>
+      <button class="filter-btn" data-filter="hike">🥾 Hikes</button>
+      <button class="filter-btn" data-filter="daytrip">✈️ Day Trips</button>
+      <button class="filter-btn" data-filter="route">🚂 Routes</button>
+    </div>
+    <div id="map"></div>
+  </div>
+
+  <!-- ══════════════ PRACTICAL INFO ══════════════ -->
+  <div class="section" id="tab-practical">
+
+    <div class="card">
+      <h2>✈️ Flights</h2>
+      <h3>Outbound — June 7–8</h3>
+      <table class="flight-table">
+        <thead><tr><th>Flight</th><th>Carrier</th><th>Route</th><th>Departs</th><th>Arrives</th><th>Date</th></tr></thead>
+        <tbody>
+          <tr><td class="flight-num">DL 3824</td><td>SkyWest/Delta</td><td>Spokane (GEG) → Seattle (SEA)</td><td>11:19</td><td>12:47</td><td>Jun 7</td></tr>
+          <tr><td class="flight-num">DL 142</td><td>Delta</td><td>Seattle (SEA) → Amsterdam (AMS)</td><td>13:55</td><td>08:40+1</td><td>Jun 7</td></tr>
+          <tr><td class="flight-num">DL 9220</td><td>KLM City Hopper</td><td>Amsterdam (AMS) → Ljubljana (LJU)</td><td>11:40</td><td>13:25</td><td>Jun 8</td></tr>
+        </tbody>
+      </table>
+      <h3>Return — June 19</h3>
+      <table class="flight-table">
+        <thead><tr><th>Flight</th><th>Carrier</th><th>Route</th><th>Departs</th><th>Arrives</th><th>Date</th></tr></thead>
+        <tbody>
+          <tr><td class="flight-num">DL 9567</td><td>KLM City Hopper</td><td>Ljubljana (LJU) → Amsterdam (AMS)</td><td>06:00</td><td>08:00</td><td>Jun 19</td></tr>
+          <tr><td class="flight-num">DL 143</td><td>Delta</td><td>Amsterdam (AMS) → Seattle (SEA)</td><td>10:20</td><td>11:37</td><td>Jun 19</td></tr>
+          <tr><td class="flight-num">DL 4145</td><td>SkyWest/Delta</td><td>Seattle (SEA) → Spokane (GEG)</td><td>14:30</td><td>15:42</td><td>Jun 19</td></tr>
+        </tbody>
+      </table>
+      <div class="warn-box" style="margin-top:16px">⚠️ Pre-book a taxi for <strong>03:30 on June 19</strong>. The airport is 25 km away. GoOpti does not reliably serve this hour. Ask your Ljubljana Airbnb host for a recommended driver, or call <strong>Metro Taxi (+386 1 519 25 19)</strong> or Laguna Taxi. Confirm the booking the day before.</div>
+    </div>
+
+    <div class="card">
+      <h2>🚢 Venice Ferry</h2>
+      <div class="info-box">
+        <strong>✔ BOOKED</strong> — Order ID: <strong>5EHNR2FGIJY</strong><br>
+        Operator: Adriatic Lines · Route: Piran → San Basilio port, Dorsoduro, Venice<br>
+        Date: Saturday, June 13, 2026<br>
+        <strong>Departs Piran 08:00 · Returns to Piran 20:00</strong><br>
+        Price: ~€85/person return (~€255 total)
+      </div>
+      <div class="warn-box">Venice charges a day-tripper access fee on June 13 (~€5/person). Book at <a href="https://cda.venezia.it" target="_blank">cda.venezia.it</a></div>
+    </div>
+
+    <div class="card">
+      <h2>🚂 Getting Around — Key Journey Legs</h2>
+
+      <h3>Day 2: Ljubljana → Bohinj</h3>
+      <p style="font-size:0.88rem;line-height:1.6;margin-top:6px">Train: Ljubljana → Jesenice → Bohinjska Bistrica (~2 hrs). Bus or taxi to Lake Bohinj from Bohinjska Bistrica (~20 min). Stay near Ukanc for the Seven Lakes trailhead.</p>
+
+      <h3>Day 5: Bohinj → Piran (via Škocjan Caves)</h3>
+      <p style="font-size:0.88rem;line-height:1.6;margin-top:6px">Train Bohinjska Bistrica → Ljubljana (~2 hrs via Jesenice). Train stop at Divača, 4 km from the caves. After tour: bus Divača → Piran (~45 min). Total: ~3.5–4 hrs.</p>
+
+      <h3>Day 7: Piran → Bovec</h3>
+      <p style="font-size:0.88rem;line-height:1.6;margin-top:6px">Bus Piran → Koper (~30 min) → Nova Gorica (~1.5 hrs) → Bovec (~1.5–2 hrs). Total: ~3.5–4 hrs.</p>
+
+      <h3>Day 9: Bovec → Kobarid</h3>
+      <p style="font-size:0.88rem;line-height:1.6;margin-top:6px">Bus Bovec → Kobarid: 30–40 min, several buses daily.</p>
+
+      <h3>Day 10: Kobarid → Ljubljana (Scenic Bohinj Railway)</h3>
+      <p style="font-size:0.88rem;line-height:1.6;margin-top:6px">Bus Kobarid → Tolmin → Most na Soči. Then board the scenic <strong>Bohinj Railway</strong>: Most na Soči → Bohinjska Bistrica (through a 6-km tunnel beneath the Julian Alps) → Jesenice → Ljubljana. One of Slovenia's great railway journeys.</p>
+
+      <h3>Day 11: Ljubljana → Zagreb, Croatia</h3>
+      <p style="font-size:0.88rem;line-height:1.6;margin-top:6px">Direct train Ljubljana → Zagreb: ~2.5 hrs. Take the 07:00–08:00 departure for a full day. Return trains around 17:00–18:00, arriving Ljubljana by 20:00–20:30.</p>
+
+      <div class="info-box" style="margin-top:16px">Booking links: <a href="https://potniski.sz.si/en/" target="_blank">potniski.sz.si</a> (Slovenia trains) · <a href="https://ap-ljubljana.si" target="_blank">ap-ljubljana.si</a> (buses)</div>
+    </div>
+
+    <div class="card">
+      <h2>🏠 Accommodation — Airbnb Guide</h2>
+      <p style="font-size:0.87rem;color:var(--muted);margin-bottom:16px">Search for 3 guests, at least 3 beds. Filter for free cancellation through late May 2026 where possible.</p>
+
+      <div style="display:grid;gap:12px">
+        <div style="border:1px solid var(--border);border-radius:10px;padding:14px;display:flex;align-items:flex-start;gap:14px">
+          <div style="background:var(--teal);color:white;border-radius:8px;padding:6px 11px;font-weight:700;font-size:0.85rem;white-space:nowrap;flex-shrink:0">Jun 8</div>
+          <div><strong>Ljubljana</strong> — 1 night<br><span style="font-size:0.84rem;color:var(--muted)">Central area, walking distance to old town. Prule, Center, or Tabor neighbourhoods.</span><br><a href="https://www.airbnb.com/rooms/4820010" target="_blank" style="font-size:0.84rem;color:var(--teal);font-weight:600">View Airbnb listing →</a></div>
+        </div>
+        <div style="border:1px solid var(--border);border-radius:10px;padding:14px;display:flex;align-items:flex-start;gap:14px">
+          <div style="background:var(--teal);color:white;border-radius:8px;padding:6px 11px;font-weight:700;font-size:0.85rem;white-space:nowrap;flex-shrink:0">Jun 9–11</div>
+          <div><strong>Bohinj / Ukanc</strong> — 3 nights<br><span style="font-size:0.84rem;color:var(--muted)">Ukanc village (western lake end) — closest to Savica Falls / Seven Lakes trailhead.</span><br><a href="https://www.airbnb.com/rooms/52461165" target="_blank" style="font-size:0.84rem;color:var(--teal);font-weight:600">View Airbnb listing →</a></div>
+        </div>
+        <div style="border:1px solid var(--border);border-radius:10px;padding:14px;display:flex;align-items:flex-start;gap:14px">
+          <div style="background:var(--teal);color:white;border-radius:8px;padding:6px 11px;font-weight:700;font-size:0.85rem;white-space:nowrap;flex-shrink:0">Jun 12–13</div>
+          <div><strong>Piran</strong> — 2 nights<br><span style="font-size:0.84rem;color:var(--muted)">Piran old town (inside the walls), walking distance to the ferry pier. Piran is mostly car-free.</span></div>
+        </div>
+        <div style="border:1px solid var(--border);border-radius:10px;padding:14px;display:flex;align-items:flex-start;gap:14px">
+          <div style="background:var(--teal);color:white;border-radius:8px;padding:6px 11px;font-weight:700;font-size:0.85rem;white-space:nowrap;flex-shrink:0">Jun 14–15</div>
+          <div><strong>Bovec</strong> — 2 nights<br><span style="font-size:0.84rem;color:var(--muted)">Bovec village centre. Good transport hub for the Soča Trail.</span></div>
+        </div>
+        <div style="border:1px solid var(--border);border-radius:10px;padding:14px;display:flex;align-items:flex-start;gap:14px">
+          <div style="background:var(--teal);color:white;border-radius:8px;padding:6px 11px;font-weight:700;font-size:0.85rem;white-space:nowrap;flex-shrink:0">Jun 16</div>
+          <div><strong>Kobarid</strong> — 1 night<br><span style="font-size:0.84rem;color:var(--muted)">Kobarid village, walking distance to the outdoor museum loop.</span></div>
+        </div>
+        <div style="border:1px solid var(--border);border-radius:10px;padding:14px;display:flex;align-items:flex-start;gap:14px">
+          <div style="background:var(--teal);color:white;border-radius:8px;padding:6px 11px;font-weight:700;font-size:0.85rem;white-space:nowrap;flex-shrink:0">Jun 17–18</div>
+          <div><strong>Ljubljana</strong> — 2 nights<br><span style="font-size:0.84rem;color:var(--muted)">Same search area as your first Ljubljana stay.</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>🔗 Useful Links</h2>
+      <div class="link-grid">
+        <a href="https://potniski.sz.si/en/" target="_blank" class="link-card">
+          <div class="lc-title">Slovenia Trains</div>
+          <div class="lc-url">potniski.sz.si</div>
+        </a>
+        <a href="https://ap-ljubljana.si" target="_blank" class="link-card">
+          <div class="lc-title">Bus Schedules</div>
+          <div class="lc-url">ap-ljubljana.si</div>
+        </a>
+        <a href="https://adriatic-lines.com" target="_blank" class="link-card">
+          <div class="lc-title">Venice Ferry</div>
+          <div class="lc-url">adriatic-lines.com</div>
+        </a>
+        <a href="https://www.park-skocjanske-jame.si/en/" target="_blank" class="link-card">
+          <div class="lc-title">Škocjan Caves Tickets</div>
+          <div class="lc-url">park-skocjanske-jame.si</div>
+        </a>
+        <a href="https://cda.venezia.it" target="_blank" class="link-card">
+          <div class="lc-title">Venice Day-Tripper Fee</div>
+          <div class="lc-url">cda.venezia.it</div>
+        </a>
+        <a href="https://www.alltrails.com" target="_blank" class="link-card">
+          <div class="lc-title">AllTrails (Offline Maps)</div>
+          <div class="lc-url">alltrails.com</div>
+        </a>
+        <a href="https://www.arso.si/en/" target="_blank" class="link-card">
+          <div class="lc-title">Slovenia Weather &amp; Mountain Forecasts</div>
+          <div class="lc-url">arso.si</div>
+        </a>
+        <a href="https://www.kobariski-muzej.si/en/" target="_blank" class="link-card">
+          <div class="lc-title">Kobarid WWI Museum</div>
+          <div class="lc-url">kobariski-muzej.si</div>
+        </a>
+        <a href="https://www.tnp.si/en/" target="_blank" class="link-card">
+          <div class="lc-title">Triglav National Park</div>
+          <div class="lc-url">tnp.si</div>
+        </a>
+        <a href="https://www.visitljubljana.com/en/" target="_blank" class="link-card">
+          <div class="lc-title">Ljubljana Tourism</div>
+          <div class="lc-url">visitljubljana.com</div>
+        </a>
+        <a href="https://www.infozagreb.hr/en" target="_blank" class="link-card">
+          <div class="lc-title">Zagreb Tourism</div>
+          <div class="lc-url">infozagreb.hr</div>
+        </a>
+        <a href="https://brokenships.com" target="_blank" class="link-card">
+          <div class="lc-title">Museum of Broken Relationships</div>
+          <div class="lc-url">brokenships.com</div>
+        </a>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ══════════════ GEAR & TIPS ══════════════ -->
+  <div class="section" id="tab-gear">
+
+    <div class="card">
+      <h2>🎒 Hiking Gear Checklist</h2>
+      <p style="font-size:0.87rem;color:var(--muted);margin-bottom:16px">Seamus and Solveig should each have their own day packs (20–25L).</p>
+
+      <h3>Footwear</h3>
+      <div class="gear-grid" style="margin-top:8px">
+        <div class="gear-item">Waterproof trail shoes or ankle boots with Vibram-type soles</div>
+        <div class="gear-item">Extra dry socks for each day</div>
+      </div>
+
+      <h3>Poles &amp; Layers</h3>
+      <div class="gear-grid" style="margin-top:8px">
+        <div class="gear-item">Trekking poles (strongly recommended for Seven Lakes and Krn)</div>
+        <div class="gear-item">Fleece per person</div>
+        <div class="gear-item">Wind/rain shell per person</div>
+        <div class="gear-item">Warm hat + gloves (above 1,800 m can be 5–10 °C even in June)</div>
+      </div>
+
+      <h3>Hydration &amp; Food</h3>
+      <div class="gear-grid" style="margin-top:8px">
+        <div class="gear-item">2L+ water capacity per person (mountain huts sell water but carry your own)</div>
+        <div class="gear-item">Packed lunch for full-day hikes</div>
+        <div class="gear-item">High-energy snacks (nuts, bars)</div>
+      </div>
+
+      <h3>Navigation &amp; Safety</h3>
+      <div class="gear-grid" style="margin-top:8px">
+        <div class="gear-item">AllTrails or maps.me offline maps (download before you go)</div>
+        <div class="gear-item">Emergency whistle (per person)</div>
+        <div class="gear-item">Headlamp (per person)</div>
+        <div class="gear-item">First aid: blister plasters, ibuprofen, elastic bandage, antiseptic wipes</div>
+      </div>
+
+      <h3>Sun Protection</h3>
+      <div class="gear-grid" style="margin-top:8px">
+        <div class="gear-item">SPF 50+ sunscreen (UV is stronger at altitude)</div>
+        <div class="gear-item">Sunglasses</div>
+        <div class="gear-item">Sun hat</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>🌤️ Weather in June</h2>
+      <p style="font-size:0.88rem;line-height:1.7">Generally excellent — long days (sunset after 20:30), 20–25 °C in valleys, 10–15 °C at altitude.</p>
+      <div class="warn-box">⛈️ <strong>Afternoon thunderstorms are common above treeline.</strong> Start big hikes by 07:00 and aim to be below treeline by 14:00. Check <a href="https://www.arso.si/en/" target="_blank">arso.si</a> for mountain forecasts.</div>
+    </div>
+
+    <div class="card">
+      <h2>💡 Bonus Options</h2>
+      <h3>Kranjska Gora add-on</h3>
+      <p style="font-size:0.88rem;line-height:1.7;margin-top:6px">If you want to add the <strong>Prisojnik / Okno via ferrata</strong> (C/D difficulty, 2,547 m) or the <strong>Mount Peč Triple Border hike</strong> (where Slovenia, Austria, and Italy meet), add 2 nights Kranjska Gora after Bohinj. Prisojnik requires prior via ferrata experience — hire a local guide.</p>
+      <h3>Alternative to Zagreb (Day 11)</h3>
+      <p style="font-size:0.88rem;line-height:1.7;margin-top:6px">The <strong>Kamnik Alps</strong> (Kamniško Sedlo, 2,000 m, 12 km) make a great final hike; bus from Ljubljana to Kamnik is 40 min.</p>
+    </div>
+
+  </div>
+
+</div><!-- #app -->
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+
+// ─── PASSWORD GATE ──────────────────────────────────────────────────────────
+const PASSWORD = 'HunterSlovenia';
+const STORAGE_KEY = 'slovenia_auth';
+const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
+
+function checkAuth() {
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if (stored) {
+      const { ts } = JSON.parse(stored);
+      if (Date.now() - ts < THIRTY_DAYS_MS) return true;
+    }
+  } catch(e) {}
+  return false;
+}
+
+function unlock() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify({ ts: Date.now() }));
+  document.getElementById('pw-screen').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+  initMap();
+}
+
+if (checkAuth()) {
+  document.getElementById('pw-screen').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+}
+
+document.getElementById('pw-btn').addEventListener('click', function() {
+  const val = document.getElementById('pw-input').value;
+  if (val === PASSWORD) {
+    unlock();
+  } else {
+    document.getElementById('pw-error').style.display = 'block';
+    document.getElementById('pw-input').value = '';
+    document.getElementById('pw-input').focus();
+  }
+});
+
+document.getElementById('pw-input').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') document.getElementById('pw-btn').click();
+});
+
+// ─── TABS ───────────────────────────────────────────────────────────────────
+let mapInitialized = false;
+
+document.querySelectorAll('.nav-btn').forEach(btn => {
+  btn.addEventListener('click', function() {
+    document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+    this.classList.add('active');
+    const tab = this.dataset.tab;
+    document.getElementById('tab-' + tab).classList.add('active');
+    if (tab === 'map' && !mapInitialized) {
+      initMap();
+    }
+  });
+});
+
+// ─── DAY CARDS ──────────────────────────────────────────────────────────────
+function toggleDay(header) {
+  const card = header.closest('.day-card');
+  card.classList.toggle('open');
+}
+
+// ─── MAP ────────────────────────────────────────────────────────────────────
+function initMap() {
+  if (mapInitialized) return;
+  mapInitialized = true;
+
+  const map = L.map('map', { center: [46.2, 13.9], zoom: 8 });
+
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© <a href="https://openstreetmap.org">OpenStreetMap</a> contributors',
+    maxZoom: 18
+  }).addTo(map);
+
+  function makeIcon(color, letter) {
+    return L.divIcon({
+      className: '',
+      html: `<div style="background:${color};border:2.5px solid rgba(0,0,0,0.25);width:32px;height:32px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);display:flex;align-items:center;justify-content:center;box-shadow:0 2px 6px rgba(0,0,0,0.3);">
+        <span style="transform:rotate(45deg);color:white;font-weight:700;font-size:13px">${letter}</span>
+      </div>`,
+      iconSize: [32, 32], iconAnchor: [16, 32], popupAnchor: [0, -34]
+    });
+  }
+
+  function smallDot(color) {
+    return L.divIcon({
+      className: '',
+      html: `<div style="background:${color};width:16px;height:16px;border-radius:50%;border:2px solid white;box-shadow:0 1px 4px rgba(0,0,0,0.35)"></div>`,
+      iconSize: [16, 16], iconAnchor: [8, 8], popupAnchor: [0, -10]
+    });
+  }
+
+  const C = { base: '#e07b35', hike: '#2a9d60', daytrip: '#3a7bd5', ferry: '#c0392b', airport: '#9b59b6', route: '#e07b35', ferryRoute: '#c0392b' };
+  const layers = { base: L.layerGroup().addTo(map), hike: L.layerGroup().addTo(map), daytrip: L.layerGroup().addTo(map), route: L.layerGroup().addTo(map) };
+
+  function pin(layer, latlng, icon, popupHtml) {
+    L.marker(latlng, { icon }).bindPopup(popupHtml, { maxWidth: 280 }).addTo(layers[layer]);
+  }
+
+  function polyline(layer, points, color, opts={}) {
+    L.polyline(points, { color, weight: opts.weight||4, opacity: opts.opacity||0.7, dashArray: opts.dash||null }).addTo(layers[layer]);
+  }
+
+  function popup(title, date, body, tags=[]) {
+    const tagHtml = tags.map(([label,cls]) => `<span class="popup-tag tag-${cls}">${label}</span>`).join('');
+    return `<div class="popup-title">${title}</div>${date ? `<div class="popup-date">${date}</div>` : ''}<div class="popup-body">${body}</div><div>${tagHtml}</div>`;
+  }
+
+  // Base camps
+  pin('base', [46.0569, 14.5058], makeIcon(C.base,'LJ'), popup('Ljubljana','Jun 8 (arrive) · Jun 17–18 (return)','Capital city &amp; gateway. Arrive 13:25 at LJU. Evening walk: Prešeren Square, Triple Bridge, Dragon Bridge, Ljubljana Castle.',[['Base camp','base'],['1 night Jun 8','travel'],['2 nights Jun 17–18','travel']]));
+  pin('base', [46.2833, 13.8833], makeIcon(C.base,'BH'), popup('Bohinj / Ukanc','Jun 9–11 (3 nights)','Lake Bohinj western end. Closest village to Savica Falls trailhead and the Seven Lakes Valley. No car needed — trail access is direct.',[['Base camp','base'],['3 nights','travel']]));
+  pin('base', [45.5284, 13.5687], makeIcon(C.base,'PI'), popup('Piran','Jun 12–13 (2 nights)','Venetian old town on the Adriatic. Mostly car-free. Stay inside the old walls for easy access to the ferry pier.',[['Base camp','base'],['2 nights','travel']]));
+  pin('base', [46.3369, 13.5514], makeIcon(C.base,'BV'), popup('Bovec','Jun 14–15 (2 nights)','Adventure hub of the Soča Valley. Access to Soča source, Boka waterfall, and the upper Soča Trail.',[['Base camp','base'],['2 nights','travel']]));
+  pin('base', [46.2472, 13.5756], makeIcon(C.base,'KO'), popup('Kobarid','Jun 16 (1 night)','Home of the WWI Kobarid Museum and a spectacular riverside loop hike. Smaller and quieter than Bovec.',[['Base camp','base'],['1 night','travel']]));
+
+  // Day trips
+  pin('daytrip', [46.6167, 13.8500], makeIcon(C.daytrip,'AT'), popup('Villach &amp; Dobratsch, Austria','Day 4 – Thu Jun 11','Bus Bohinj → Jesenice (~35 min), train through Karawanken Tunnel → Villach (~40 min). Option: hike in Dobratsch Nature Park (easy ridge trail, great views) or explore Villach old town.',[['Day trip','daytrip'],['Austria','daytrip']]));
+  pin('daytrip', [45.4408, 12.3155], makeIcon(C.daytrip,'VE'), popup('Venice, Italy','Day 6 – Sat Jun 13','🚢 <strong>Ferry booked!</strong> Order 5EHNR2FGIJY · Adriatic Lines<br>Departs Piran 08:00 → San Basilio port, Dorsoduro<br>Returns Piran 20:00<br><br>Note: Venice day-tripper access fee €5/person on Jun 13.',[['Day trip','daytrip'],['Ferry booked ✓','ferry']]));
+  pin('daytrip', [45.8150, 15.9819], makeIcon(C.daytrip,'ZG'), popup('Zagreb, Croatia','Day 11 – Thu Jun 18','Train Ljubljana → Zagreb (~2 hrs). Explore the Upper Town (Gornji Grad), Dolac Market, Museum of Broken Relationships, St. Mark\'s Church. Return same day.',[['Day trip','daytrip'],['Croatia','daytrip']]));
+
+  // Airport
+  pin('daytrip', [46.2237, 14.4576], makeIcon(C.airport,'✈'), popup('Ljubljana Airport (LJU)','Jun 8 (arrive) · Jun 19 (depart)','Arrive DL 9220 at 13:25 on Jun 8. Depart Jun 19 (DL 9567 LJU→AMS 06:00). GoOpti shuttle or Arriva bus to city centre (~35 min).',[['Airport','travel']]));
+
+  // Day hikes
+  pin('hike', [46.2967, 13.8633], smallDot(C.hike), popup('Savica Falls + Bohinj Lake Loop','Day 2 – Tue Jun 9','2–3 hrs · ~280 m gain<br>Bus from Bohinj Jezero to Savica trailhead. Waterfall at trail start, then lake shoreline return. Rewarding intro hike.',[['Day hike','hike'],['Easy–Moderate','hike']]));
+  pin('hike', [46.3333, 13.8500], smallDot(C.hike), popup('Seven Lakes Valley (Triglav NP)','Day 3 – Wed Jun 10','20 km · ~1,500 m gain · 8–10 hrs<br>Strenuous full-day alpine circuit. Emerald lakes, limestone karst, and sweeping Julian Alps views. Start at Savica trailhead.',[['Day hike','hike'],['Strenuous','hike']]));
+  pin('hike', [46.5236, 13.7500], smallDot(C.hike), popup('Boka Waterfall + Kozjak','Day 7 – Sun Jun 14','8 km · ~400 m · 3–4 hrs<br>Boka (144 m — Slovenia\'s highest waterfall) combined with the Kozjak waterfall gorge.',[['Day hike','hike'],['Moderate','hike']]));
+  pin('hike', [46.3800, 13.6100], smallDot(C.hike), popup('Soča Source + Upper Trail','Day 8 – Mon Jun 15','~20 km · ~400 m · 5–7 hrs<br>Turquoise Soča river from its source spring. Trail winds through gorges. Stunning colour.',[['Day hike','hike'],['Moderate','hike']]));
+  pin('hike', [46.2700, 13.5700], smallDot(C.hike), popup('Lake Krn + Mount Krn (2,244 m)','Day 9 – Tue Jun 16','~16 km return · ~1,610 m gain · 9–10 hrs<br>Approach passing the largest glacial lake in Slovenia. WWI fortifications at the summit. Can stop at Lake Krn.',[['Day hike','hike'],['Very Strenuous','hike']]));
+  pin('hike', [46.2475, 13.5770], smallDot(C.hike), popup('Kobarid Historical Trail','Day 10 – Wed Jun 17','5 km · ~200 m · ~2 hrs<br>Riverside loop past Kozjak waterfall, Napoleon Bridge, and WWI trenches. Suitable for all fitness levels.',[['Day hike','hike'],['Easy–Moderate','hike']]));
+  pin('hike', [45.6639, 13.9880], smallDot('#9b59b6'), popup('Škocjan Caves','Day 5 – Fri Jun 12 (en route to Piran)','UNESCO World Heritage. One of the world\'s largest underground canyons. Train to Divača, taxi ~4 km to caves. 2-hr guided tour. ~€22 adult / €14 child.',[['Day 5 stop','daytrip'],['UNESCO','daytrip']]));
+
+  // Routes
+  polyline('route', [[46.2237,14.4576],[46.0569,14.5058]], C.route, {weight:3, dash:'5,7'});
+  polyline('route', [[46.0569,14.5058],[46.1450,14.2000],[46.2833,13.8833]], C.route, {weight:4});
+  polyline('route', [[46.2833,13.8833],[46.4350,14.0700],[46.6167,13.8500]], '#3a7bd5', {weight:3, dash:'6,5'});
+  polyline('route', [[46.2833,13.8833],[45.9050,14.2150],[45.6640,13.9880],[45.5284,13.5687]], C.route, {weight:4});
+  polyline('route', [[45.5284,13.5687],[45.4408,12.3155]], C.ferryRoute, {weight:3, dash:'8,6'});
+  polyline('route', [[45.5284,13.5687],[46.0000,13.6000],[46.3369,13.5514]], C.route, {weight:4});
+  polyline('route', [[46.3369,13.5514],[46.2472,13.5756]], C.route, {weight:4});
+  polyline('route', [[46.2472,13.5756],[46.2833,13.8833],[46.1450,14.2000],[46.0569,14.5058]], C.route, {weight:4, dash:'5,5'});
+  polyline('route', [[46.0569,14.5058],[45.8150,15.9819]], '#3a7bd5', {weight:3, dash:'6,5'});
+  polyline('route', [[46.0569,14.5058],[46.2237,14.4576]], C.route, {weight:3, dash:'5,7'});
+
+  // Filter buttons
+  document.querySelectorAll('.filter-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+      const filter = this.dataset.filter;
+      document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+      this.classList.add('active');
+      if (filter === 'all') {
+        Object.values(layers).forEach(l => map.addLayer(l));
+      } else {
+        Object.entries(layers).forEach(([key, l]) => {
+          if (key === filter) map.addLayer(l); else map.removeLayer(l);
+        });
+      }
+    });
+  });
+
+  map.fitBounds([[45.44, 12.31],[45.82, 15.98],[46.62, 13.85],[45.53, 13.57]], { padding: [40, 40] });
+}
+
+// Init map if starting on map tab or if already unlocked and map tab clicked
+if (checkAuth()) {
+  // Map will init when tab clicked, or if page loads on map section
+}
+</script>
+</body>
+</html>
